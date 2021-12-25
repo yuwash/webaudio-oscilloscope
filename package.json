@@ -19,6 +19,14 @@
   ],
   "main": "dist/index.js",
   "source": "index.js",
+  "distDir": "dist",
+  "targets": {
+    "example": {
+      "distDir": "dist-example",
+      "source": "example/index.html",
+      "publicUrl": "./"
+    }
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -27,15 +35,15 @@
   "devDependencies": {
     "babel-core": "^6.26.3",
     "babel-preset-env": "^1.7.0",
-    "parcel-bundler": "^1.12.4"
+    "parcel": "^2.0.1"
   },
   "homepage": "https://theanam.github.io/webaudio-oscilloscope/",
   "scripts": {
-    "run-example": "parcel example/index.html -d temp-example",
-    "build-example": "parcel build example/index.html -d dist-example --public-url /webaudio-oscilloscope",
-    "build": "parcel build index.js --global _osc",
-    "watch": "parcel watch index.js --global _osc",
-    "publish-page": "yarn build-example && npx gh-pages -d dist-example && rm -rf dist-example"
+    "run-example": "parcel --target example --dist-dir temp-example",
+    "build-example": "parcel build --target example",
+    "build": "parcel build index.js",
+    "watch": "parcel watch index.js",
+    "publish-page": "yarn build-example && npx gh-pages --dist-dir dist-example && rm -rf dist-example"
   },
   "babel": {
     "presets": [
