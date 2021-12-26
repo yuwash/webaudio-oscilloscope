@@ -12,17 +12,20 @@ class AudioAnalyzer{
         this.dest   = audioDest;
         // Configure Analyzer
         this.anl.fftSize = this.FFT;
+        this.bufferLength = this.anl.frequencyBinCount;
         this.src.connect(this.anl);
         if(this.dest) this.anl.connect(this.dest);
         // We have to use Uint8Array because that’s the only type
         // supported by the AnalyserNode methods
         this.u8ar = new Uint8Array(this.FFT);
+        this.frequencyU8ar = new Uint8Array(this.bufferLength);
     }
     reset(){
         this.u8ar = new Uint8Array(this.FFT).fill(0);
     }
     update(){
         this.anl.getByteTimeDomainData(this.u8ar);
+        this.anl.getByteFrequencyData(this.frequencyU8ar);
     }
 }
 
