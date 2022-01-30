@@ -1,11 +1,11 @@
 "use strict";
 import {Renderer} from "./tools/canvas_tools";
 
-function Oscilloscope(audioContext, audioSource, renderer, audioDest = null, analyzerFFT = 2048){
+class AudioAnalyzer{
+    middleValue = 128  // Uint8Array is always filled in a scale of 0..255 (2^8)
+    constructor(audioContext, audioSource, audioDest = null, analyzerFFT = 2048){
         this.actx   = audioContext;
         this.FFT    = analyzerFFT;
-        this.renderer = renderer;
-        this.paused = false;
         this.anl    = this.actx.createAnalyser();
         this.ctx    = audioContext;
         this.src    = audioSource;
@@ -14,42 +14,60 @@ function Oscilloscope(audioContext, audioSource, renderer, audioDest = null, ana
         this.anl.fftSize = this.FFT;
         this.src.connect(this.anl);
         if(this.dest) this.anl.connect(this.dest);
-        // Set up Canvas
+        // We have to use Uint8Array because that’s the only type
+        // supported by the AnalyserNode methods
         this.u8ar = new Uint8Array(this.FFT);
-        this.renderer.init();
-        this.draw = () =>{
-            if(!this.paused) requestAnimationFrame(this.draw);
+    }
+    reset(){
+        this.u8ar = new Uint8Array(this.FFT).fill(0);
+    }
+    update(){
+        this.anl.getByteTimeDomainData(this.u8ar);
+    }
+}
+
+class Oscilloscope {
+    constructor(renderer) {
+        this.analyzer = null;
+        this.renderer = renderer;
+        this.paused = true;
+    }
+    draw = () => {
+        if(!this.paused) requestAnimationFrame(this.draw);
+        this.renderer.reset();
+        this.renderer.primer();
+        this.analyzer.update();
+        this.renderer.osc();
+    }
+    start = analyzer => {
+        this.analyzer = analyzer;
+        // Set up Canvas
+        this.renderer.init(analyzer);
+        this.paused = false;
+        this.draw();
+    }
+    pause = () => {
+        this.paused = true;
+    }
+    reset = () => {
+        this.paused = true;
+        requestAnimationFrame(() => {
+            this.analyzer?.reset();
             this.renderer.reset();
             this.renderer.primer();
-            this.anl.getByteTimeDomainData(this.u8ar);
-            this.renderer.osc(this.u8ar);
-        }
-        this.start = () => {
-            this.paused = false;
-            this.draw();
-        }
-        this.pause = () =>{
-            this.paused = true;
-        }
-        this.reset = () =>{
-            this.paused = true;
-            requestAnimationFrame(()=>{
-                this.u8ar = new Uint8Array(this.FFT).fill(0);
-                this.renderer.reset();
-                this.renderer.primer();
-                this.renderer.osc(this.u8ar);
-            });
-        }
+            this.renderer.osc();
+        });
+    }
 }
 
 function createAudioContext(){
     return new (window.AudioContext || window.webkitAudioContext)();
 }
 
-function MediaStreamOscilloscope(mediaStream, renderer, audioDest = null, analyzerFFT = 2048){
+function MediaStreamAnalyzer(mediaStream, audioDest = null, analyzerFFT = 2048){
     let ctx = createAudioContext();
     let src = ctx.createMediaStreamSource(mediaStream);
-    return new Oscilloscope(ctx, src, renderer, audioDest, analyzerFFT, renderer);
+    return new AudioAnalyzer(ctx, src, audioDest, analyzerFFT);
 }
 
 function getUserMedia(constraints){
@@ -71,7 +89,7 @@ function getUserMedia(constraints){
 }
 export {
     Oscilloscope,
-    MediaStreamOscilloscope,
+    MediaStreamAnalyzer,
     createAudioContext,
     getUserMedia,
     Renderer

@@ -1,12 +1,13 @@
-import {MediaStreamOscilloscope, getUserMedia, Renderer} from "../dist/index";
+import {MediaStreamAnalyzer, Oscilloscope, getUserMedia, Renderer} from "../dist/index";
 
 let stats = document.querySelector(".status");
 let cvs   = document.querySelector(".cvs");
 
 class FancyGraphRenderer extends Renderer{
+    hlineStyle = null
     primer(){
+        super.primer();
         this.cctx.strokeStyle = "#444";
-        this.cctx.fillRect(0,0,this.width,this.height);
         this.cctx.beginPath();
         for(let i=0; i<this.width; i+=10){
             this.cctx.moveTo(i,0);
@@ -20,8 +21,11 @@ class FancyGraphRenderer extends Renderer{
         this.cctx.strokeStyle = this.strokeStyle;
     }
 }
+
+const renderer = new FancyGraphRenderer(cvs);
+const osc = new Oscilloscope(renderer);
+
 function startOsc(){
-    const renderer = new FancyGraphRenderer(cvs);
     getUserMedia({audio: true})
         .then(stream=>{
             if(!stream) {
@@ -33,8 +37,8 @@ function startOsc(){
             stats.classList.add("success");
             stats.classList.remove("error");
             stats.innerHTML = "Listening to your microphone, Try saying something";
-            let osc = new MediaStreamOscilloscope(stream, renderer, null, 2048);
-            osc.start();
+            const analyzer = new MediaStreamAnalyzer(stream, null, 2048);
+            osc.start(analyzer);
             document.querySelector(".btn.pause").addEventListener("click",()=>{
                 stats.innerHTML = "Oscilloscope Paused";
                 osc.pause();
